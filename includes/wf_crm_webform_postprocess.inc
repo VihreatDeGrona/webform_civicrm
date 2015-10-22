@@ -961,7 +961,7 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
           $perm = $perm == 1 ? 2 : 1;
         }
       }
-      $params += $existing;
+      $params += $this->createNewRelationship() ? array() : $existing;
       $params['contact_id_a'] = $cid1;
       $params['contact_id_b'] = $cid2;
       $params['relationship_type_id'] = $type;
@@ -974,6 +974,22 @@ class wf_crm_webform_postprocess extends wf_crm_webform_base {
       unset($params['relationship_permission']);
       wf_civicrm_api('relationship', 'create', $params);
     }
+  }
+  
+  /**
+   * Create new relationship? Requires create_new_relationship -field in form to work. 
+   * Form field value has to be "1" to crete new relationship. All other values are evaluated to false.
+   *
+   * @return boolean
+   */
+  private function createNewRelationship() {
+    foreach($this->node->webform["components"] as $component) {
+      if($component["form_key"] == "create_new_relationship") {
+        $cid = $component["cid"];
+        return $this->submission->data[$cid][0] == "1";
+      }
+    }
+    return false;
   }
 
   /**
