@@ -843,6 +843,7 @@ function wf_crm_search_filters($node, $component) {
   $params = array('is_deleted' => 0);
   list(, $c, ) = explode('_', $component['form_key'], 3);
   $params['contact_type'] = ucfirst($node->webform_civicrm['data']['contact'][$c]['contact'][1]['contact_type']);
+  $params['contact_sub_type'] = $node->webform_civicrm['data']['contact'][$c]['contact'][1]['contact_sub_type'];
   foreach ($component['extra']['filters'] as $key => $val) {
     if (is_array($val)) {
       $val = array_filter($val);
