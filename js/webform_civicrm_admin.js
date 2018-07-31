@@ -17,13 +17,13 @@ var wfCiviAdmin = (function ($, D) {
     var context = $(id);
     switch (op) {
       case 'all':
-        $('input:enabled:checkbox', context).prop('checked', true);
+        $('input:enabled:checkbox', context).not('.dynamic-custom-checkbox input').prop('checked', true);
         $('select:enabled[multiple] option, select:enabled option[value="create_civicrm_webform_element"]', context).each(function() {
           $(this).prop('selected', true);
         });
         break;
       case 'none':
-        $('input:enabled:checkbox', context).prop('checked', false);
+        $('input:enabled:checkbox', context).not('.dynamic-custom-checkbox input').prop('checked', false);
         $('select:enabled:not([multiple])', context).each(function() {
           if ($(this).val() === 'create_civicrm_webform_element') {
             $('option', this).each(function() {
@@ -37,7 +37,7 @@ var wfCiviAdmin = (function ($, D) {
         $('select:enabled[multiple] option', context).prop('selected', false);
         break;
       case 'reset':
-        $('input:enabled:checkbox', context).each(function() {
+        $('input:enabled:checkbox', context).not('.dynamic-custom-checkbox input').each(function() {
           $(this).prop('checked', $(this).prop('defaultChecked'));
         });
         $('select:enabled option', context).each(function() {
@@ -363,6 +363,29 @@ var wfCiviAdmin = (function ($, D) {
         }
       }).change();
 
+      //
+      function handleDynamicCustom() {
+        var $fieldset = $(this).closest('fieldset'),
+          checked = $(this).is(':checked');
+        if (checked) {
+          pub.selectReset('all', $fieldset);
+        }
+        $('input, select', $fieldset).not(this).prop('disabled', checked).each(function() {
+          var name = $(this).attr('name');
+          // Hidden element ensures value gets posted back when checkbox is disabled
+          if (checked) {
+            $fieldset.append('<input type="hidden" name="' + name + '" value="create_civicrm_webform_element"/>');
+          } else {
+            $('input[type=hidden][name="'+name+'"]', $fieldset).remove();
+          }
+        });
+        if (!checked) {
+          pub.selectReset('reset', $fieldset);
+        }
+        $('.web-civi-js-select', $fieldset).css('visibility', checked ? 'hidden' : '');
+      }
+      $('.dynamic-custom-checkbox input', context).once('wf-civi-dynamic').each(handleDynamicCustom).change(handleDynamicCustom);
+
       $('select[id*=contact-type], select[id*=contact-sub-type]', context).once('wf-civi-relationship').change(function() {
         relationshipOptions();
       });
@@ -470,7 +493,7 @@ var wfCiviAdmin = (function ($, D) {
 
       // Membership constraints
       $('select[name$=_membership_num_terms]', context).once('crm-mem-date').change(function(e, type) {
-        var $dateWrappers = $(this).parent().siblings('[class$="-date"]');
+        var $dateWrappers = $(this).parent().siblings('[class$="-date"]').not('[class$="-status-override-end-date"]');
         if ($(this).val() == '0') {
           $dateWrappers.show();
           if (type !== 'init') {
@@ -481,6 +504,14 @@ var wfCiviAdmin = (function ($, D) {
           $dateWrappers.hide().find('input').prop('checked', false);
         }
       }).trigger('change', 'init');
+      $('select[name$=_membership_status_id]', context).once('crm-mem-date').change(function(e) {
+        $target = $(this).parent().siblings('[class$="membership-status-override-end-date"]');
+        if ($(this).val() == '0') {
+          $target.hide().find('input').prop('checked', false);
+        } else {
+          $target.show();
+        }
+      }).change();
 
       function billingMessages() {
         var $pageSelect = $('[name=civicrm_1_contribution_1_contribution_contribution_page_id]');
